@@ -1,5 +1,12 @@
-Webdrivers/
+**/webdrivers/**
 
-*/test.py/*
+**/__pycache__/**
 
 **/settings.py
+
+**/cookies.txt
+
+**/clip_links.txt
+
+**/debug.log
+
