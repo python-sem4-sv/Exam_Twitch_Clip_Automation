@@ -21,22 +21,22 @@ def save_link(link, path):
     with open(path, 'a', encoding='utf8') as filehandler:
         filehandler.write(datetime.now().strftime("%d/%m/%Y %H:%M:%S") + " " + link + "\n")
         
-def create_twitch_clip(username, password, clip_length_in_seconds, channel = 'hungry', clip_title="title:)", clip_link_path = './clip_links.txt', driver_path="webdrivers/chromedriver", cookie_path = './cookies.txt'):
+def create_twitch_clip(username, password, clip_length_in_seconds, channel = 'greekgodx', clip_title="title:)", clip_link_path = './clip_links.txt', driver_path="webdrivers/chromedriver", cookie_path = './cookies.txt'):
+    start_time = time.time()
     base_url = f'https://www.twitch.tv/{channel}'
     browser = webdriver.Chrome(driver_path) # or use driver = webdriver.PhantomJS() which will do the same without the overhead of a GUI. http://phantomjs.org/download.html
     browser.get(base_url)
     cookie_file_exists = os.path.isfile(cookie_path)
 
     #start time to calculate ad time
-    start_time = time.time()
     
     if cookie_file_exists:
         load_cookie(browser, cookie_path)
         browser.refresh()
         try:
             accept_mature_filter = browser.find_element_by_xpath("//button[@id='mature-link']")
-            accept_mature_filter.send_keys(Keys.ENTER)
-            save_cookie(browser, './cookies.txt')
+            accept_mature_filter.click()
+            save_cookie(browser, cookie_path)
         except Exception:
             pass
     else:
@@ -59,8 +59,7 @@ def create_twitch_clip(username, password, clip_length_in_seconds, channel = 'hu
         login_submit.click()
         #Sleep to sure that all of the cookies are saved
         time.sleep(2)
-        save_cookie(browser, './cookies.txt')
-        
+        save_cookie(browser, cookie_path)
     actions = ActionChains(browser)
     #Implicitly wait for potential ads
     browser.implicitly_wait(35)
@@ -91,13 +90,10 @@ def create_twitch_clip(username, password, clip_length_in_seconds, channel = 'hu
     
     #Drag the clip length bar to the left
     actions.click_and_hold(drag_handle_left).move_by_offset(-drag_bar_width * (clip_length_in_seconds - 5), 0).release().perform()
-    
     # take ad time into consideration when making the clip
-    if ad_player:
-        clip_bar = browser.find_element_by_xpath('//*[@id="root"]/div/div/div/div[3]/div/div/main/div/div/div[3]/div/div[2]/div[1]/div/div/div/div[2]/div[2]/div/div')
-        #drag entire blue clip bar, corresponding to length of ad
-        actions.click_and_hold(clip_bar).move_by_offset(-drag_bar_width * (start_time - end_time), 0).release().perform()
-
+    clip_bar = browser.find_element_by_xpath('//*[@id="root"]/div/div/div/div[3]/div/div/main/div/div/div[3]/div/div[2]/div[1]/div/div/div/div[2]/div[2]')
+    #drag entire blue clip bar, corresponding to length of ad
+    actions.click_and_hold(clip_bar).move_by_offset(-drag_bar_width * (end_time - start_time), 0).release().perform()
 
     #add title
     title = clip_title
@@ -114,6 +110,10 @@ def create_twitch_clip(username, password, clip_length_in_seconds, channel = 'hu
     save_link(clip_link, clip_link_path)
     print(datetime.now().strftime("%H:%M:%S"), "Video clipped!",clip_link)
     browser.quit()
+
+    return datetime.now().strftime("%d/%m/%Y %H:%M:%S"), clip_link
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Create a twitch clip from the given channel')

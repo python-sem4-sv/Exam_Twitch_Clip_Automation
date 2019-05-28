@@ -121,7 +121,8 @@ def clip_or_nah(messages, chat_activity_avg, channel_name):
                 title = create_title(messages_full_period)
                 print("do selenium stuff")
                 try:
-                    create_twitch_clip(settings.username, settings.password, (end_peak - start_peak), channel_name, title)
+                    link_date, link = create_twitch_clip(settings.username, settings.password, (end_peak - start_peak), channel_name, title)
+                    # post link to server
                 except:
                     print("clip failed")
                     pass
@@ -136,7 +137,8 @@ def clip_or_nah(messages, chat_activity_avg, channel_name):
             title = create_title(messages_full_period)
             print("do selenium stuff LONG")
             try:
-                create_twitch_clip(settings.username, settings.password, 60, channel_name, title)
+                link_date, link = create_twitch_clip(settings.username, settings.password, 60, channel_name, title)
+                #post link to server
             except:
                 print("clip failed")
                 pass

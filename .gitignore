@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 **/webdrivers/**
 
 **/__pycache__/**
@@ -10,3 +11,17 @@
 
 **/debug.log
 
+=======
+**/webdrivers/**
+
+**/__pycache__/**
+
+**/settings.py
+
+**/cookies.txt
+
+**/clip_links.txt
+
+**/debug.log
+
+>>>>>>> 92d683ea0e6103eaab1530a4beeb9956ec6e15a7
