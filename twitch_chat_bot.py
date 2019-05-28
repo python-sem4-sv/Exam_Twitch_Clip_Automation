@@ -118,7 +118,7 @@ def clip_or_nah(messages, chat_activity_avg, channel_name):
         
         if len(messages) < start_chat_activity_avg * 1.0:
             if end_peak - start_peak >= 20:
-                title = create_title(messages_full_period)
+                title = create_title(messages_full_period, channel_name)
                 print("do selenium stuff")
                 try:
                     link_date, link = create_twitch_clip(settings.username, settings.password, (end_peak - start_peak), channel_name, title)
@@ -134,7 +134,7 @@ def clip_or_nah(messages, chat_activity_avg, channel_name):
 #           Clip if peak is longer than 55 seconds  
 #           Reset peaks to avoid getting into the if statement when not having peaks
         elif end_peak - start_peak >= 55:
-            title = create_title(messages_full_period)
+            title = create_title(messages_full_period, channel_name)
             print("do selenium stuff LONG")
             try:
                 link_date, link = create_twitch_clip(settings.username, settings.password, 60, channel_name, title)
@@ -147,10 +147,10 @@ def clip_or_nah(messages, chat_activity_avg, channel_name):
             messages_full_period = []
 
 
-def create_title(messages_list):
+def create_title(messages_list, channel_name):
     category_count, emote_count = categorize_messages(messages_full_period)
-
-    title = sorted(category_count.items(), key=lambda x: x[1], reverse=True)[1][0]
+    title = channel_name 
+    title += " " + sorted(category_count.items(), key=lambda x: x[1], reverse=True)[1][0]
     title += " " + str(sorted(emote_count.items(), key=lambda x: x[1], reverse=True)[0][0])
 
     return title
@@ -187,4 +187,4 @@ if __name__ == "__main__":
     parser.add_argument("streamer", help="Give a online streamers name to look at", default="sodapoppin")
     args = parser.parse_args()
     print("Hi, stats will be printed every ~10 seconds!")
-    main(args.streamer)
+    main(args.streamer.lower())

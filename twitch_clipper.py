@@ -63,10 +63,7 @@ def create_twitch_clip(username, password, clip_length_in_seconds, channel = 'gr
     actions = ActionChains(browser)
     #Implicitly wait for potential ads
     browser.implicitly_wait(35)
-    try:
-        ad_player = browser.find_element_by_xpath('//*[@id="default-player"]/div/div[5]/div[2]')
-    except Exception:
-        pass
+    
     #Click the clip button
     clip_button = browser.find_element_by_class_name('pl-clips-button').send_keys(Keys.ENTER)
 
