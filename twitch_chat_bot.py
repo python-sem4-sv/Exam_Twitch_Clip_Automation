@@ -4,11 +4,11 @@ from emoji import demojize
 import re
 import time
 import argparse
+from twitch_clipper import create_twitch_clip
+import login_info
 
 ## Miscellaneous
 threshold = 10
-messages = []
-msg_count_len = []
 msg_count = []
 start_peak = None
 start_chat_activity_avg = None
@@ -24,19 +24,16 @@ emote_feelings_dict = [
 
 def main(channel_name):
     sock = init(channel_name)
-    global messages
-    global start_peak
-    global start_chat_activity_avg
 
     while True:      
-        messages = get_messages(threshold, messages, sock)
+        messages = get_messages(threshold, sock)
 
-        chat_activity_avg = update_avg(messages, msg_count, msg_count_len)
+        chat_activity_avg = update_avg(messages)
         print("Chat avg: ", chat_activity_avg)
         print("Messages len: ", len(messages))
 
         if chat_activity_avg is not None:
-            start_peak, start_chat_activity_avg = clip_or_nah(messages, chat_activity_avg, start_peak, start_chat_activity_avg)
+            clip_or_nah(messages, chat_activity_avg, channel_name)
         
         print(" ")
 
@@ -49,21 +46,19 @@ def init(channel_name):
     server = 'irc.chat.twitch.tv'
     port = 6667
     channel = '#' + channel_name
-    nickname = 'pythonprojectbot2'
-    token = 'oauth:masqj2izeea5xr595pjftfhfuvw2bw'
 
     sock = socket.socket()
     sock.connect((server,port))
-    sock.send(f"PASS {token}\n".encode('utf-8'))
-    sock.send(f"NICK {nickname}\n".encode('utf-8'))
+    sock.send(f"PASS {login_info.token}\n".encode('utf-8'))
+    sock.send(f"NICK {login_info.username}\n".encode('utf-8'))
     sock.send(f"JOIN {channel}\n".encode('utf-8'))
     return sock
 
 # 
-def get_messages(threshold, messages, sock):
-    messages = []
+def get_messages(threshold, sock):
     curr_time = time.time()
     start_time = time.time()
+    messages = []
     
     while curr_time - start_time < threshold:
             curr_time = time.time()
@@ -83,11 +78,13 @@ def scan_chat(sock):
     elif len(resp) > 0:
         rgx = re.compile(r':([\S ]+)![^:]*:([\S ]*)')
         r1 = rgx.search(demojize(resp));
+        #print("group1: ", r1.group(1), " group2: ", r1.group(2), " time: ", time.time())
         return (r1.group(1), r1.group(2), time.time())
     
     return 0
 
-def update_avg(messages, msg_count, msg_count_len):
+def update_avg(messages):
+    global msg_count
     msg_count_len = len(msg_count)
     print("msg_count_len: ", msg_count_len)
     
@@ -100,7 +97,9 @@ def update_avg(messages, msg_count, msg_count_len):
         msg_count.append(len(messages))
         return sum(msg_count[:6]) / 6
     
-def clip_or_nah(messages, chat_activity_avg, start_peak = None, start_chat_activity_avg = None):
+def clip_or_nah(messages, chat_activity_avg, channel_name):
+    global start_peak
+    global start_chat_activity_avg
 #     Get in here if there is a peak
     if(len(messages) > chat_activity_avg * 2.0 and start_peak is None): 
 #       Categorize what type of clip this is
@@ -108,7 +107,8 @@ def clip_or_nah(messages, chat_activity_avg, start_peak = None, start_chat_activ
 #       Set start peak
         timestamp = messages[-1][2]
         print("set start_peak")       
-        return timestamp, chat_activity_avg
+        start_peak = timestamp
+        start_chat_activity_avg = chat_activity_avg
         
     elif start_peak is not None:
         end_peak = time.time()
@@ -117,18 +117,19 @@ def clip_or_nah(messages, chat_activity_avg, start_peak = None, start_chat_activ
         if len(messages) < start_chat_activity_avg * 1.5:
             if end_peak - start_peak >= 20:
                 print("do selenium stuff")
-#                 do_selenium_stuff(end_peak - start_peak)
-            return None, None
+                create_twitch_clip(login_info.username, login_info.password, (end_peak - start_peak), channel_name,"Temp title short")
+            start_peak = None
+            start_chat_activity_avg = None
             
                 
 #           Clip if peak is longer than 55 seconds  
 #           Reset peaks to avoid getting into the if statement when not having peaks
         elif end_peak - start_peak >= 55:
             print("do selenium stuff LONG")
-#             do_selenium_stuff(60)
-            return None, None
+            create_twitch_clip(60)(login_info.username, login_info.password, (end_peak - start_peak), channel_name, "Temp title long")
+            start_peak = None
+            start_chat_activity_avg = None
 
-    return start_peak, start_chat_activity_avg
 
 def categorize_messages(message_list):
     emote_category_count = {}
