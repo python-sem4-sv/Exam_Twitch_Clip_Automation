@@ -21,15 +21,23 @@ def save_link(link, path):
     with open(path, 'a', encoding='utf8') as filehandler:
         filehandler.write(datetime.now().strftime("%d/%m/%Y %H:%M:%S") + " " + link + "\n")
         
-def create_twitch_clip(username, password, clip_length_in_seconds, channel = 'hungry', clip_title="title:)", clip_link_path = './clip_links.txt', driver_path="webdrivers/chromedriver", cookie_path = './cookies.txt'):
+def create_twitch_clip(username, password, clip_length_in_seconds, channel = 'greekgodx', clip_title="title:)", clip_link_path = './clip_links.txt', driver_path="webdrivers/chromedriver", cookie_path = './cookies.txt'):
+    start_time = time.time()
     base_url = f'https://www.twitch.tv/{channel}'
     browser = webdriver.Chrome(driver_path) # or use driver = webdriver.PhantomJS() which will do the same without the overhead of a GUI. http://phantomjs.org/download.html
     browser.get(base_url)
     cookie_file_exists = os.path.isfile(cookie_path)
+
+    #start time to calculate ad time
     
     if cookie_file_exists:
         load_cookie(browser, cookie_path)
         browser.refresh()
+        try:
+            accept_mature_filter = browser.find_element_by_xpath("//button[@id='mature-link']")
+            accept_mature_filter.click()
+        except Exception:
+            pass
     else:
         #Check if there is a mature filter and accept et, else move along
         try:
@@ -51,20 +59,23 @@ def create_twitch_clip(username, password, clip_length_in_seconds, channel = 'hu
         #Sleep to sure that all of the cookies are saved
         time.sleep(2)
         save_cookie(browser, './cookies.txt')
-        
     actions = ActionChains(browser)
     #Implicitly wait for potential ads
     browser.implicitly_wait(35)
     #Click the clip button
     clip_button = browser.find_element_by_class_name('pl-clips-button').send_keys(Keys.ENTER)
+
+    #end time for length of ad
+    end_time = time.time()
     
+
     #Switch the active tab to the new tab which the button opened
     browser.switch_to.window(browser.window_handles[1])
     drag_handle_left = browser.find_element_by_xpath("//*[@id='root']/div/div/div/div[3]/div/div/main/div/div/div[3]/div/div[2]/div[1]/div/div/div/div[2]/div[1]")
     #the timeline of the clip
     drag_bar_width = browser.find_element_by_xpath('//*[@id="root"]/div/div/div/div[3]/div/div/main/div/div/div[3]/div/div[2]/div[1]/div').value_of_css_property('width')[0:3]
     
-            #The text this returns is in the following format: "xx:xx - xx:xx"
+    #The text this returns is in the following format: "xx:xx - xx:xx"
     clip_length = browser.find_element_by_xpath('//*[@id="root"]/div/div/div/div[3]/div/div/main/div/div/div[3]/div/div[2]/div[1]/div/div/div/div[1]/div/div/div/p[2]').get_attribute("innerHTML")
     clip_length = int(clip_length[11::])
     drag_bar_width = int(drag_bar_width)/(60 + clip_length)
@@ -74,7 +85,12 @@ def create_twitch_clip(username, password, clip_length_in_seconds, channel = 'hu
     
     #Drag the clip length bar to the left
     actions.click_and_hold(drag_handle_left).move_by_offset(-drag_bar_width * (clip_length_in_seconds - 5), 0).release().perform()
-    
+    # take ad time into consideration when making the clip
+    clip_bar = browser.find_element_by_xpath('//*[@id="root"]/div/div/div/div[3]/div/div/main/div/div/div[3]/div/div[2]/div[1]/div/div/div/div[2]/div[2]')
+    #drag entire blue clip bar, corresponding to length of ad
+    actions.click_and_hold(clip_bar).move_by_offset(-drag_bar_width * (end_time - start_time), 0).release().perform()
+    print(-drag_bar_width * (end_time - start_time))
+
     #add title
     title = clip_title
     title_field = browser.find_element_by_xpath("//*[@id='cmgr-title-input']")
@@ -90,6 +106,8 @@ def create_twitch_clip(username, password, clip_length_in_seconds, channel = 'hu
     save_link(clip_link, clip_link_path)
     print(datetime.now().strftime("%H:%M:%S"), "Video clipped!",clip_link)
     browser.quit()
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Create a twitch clip from the given channel')
