@@ -66,18 +66,18 @@ def run_chat_bot(channel, time_slow, time_fast):
 def post_messages(chat_field, time_slow, time_fast):
     while True:
         # SLow messages
-        messages = [1,2,3,4,5,6,7,8,9,10]
+        # messages = [1,2,3,4,5,6,7,8,9,10]
         slow_start_time = time.time()
         slow_delta_time = 0
         msg_nr = 0
         while time_slow >= slow_delta_time:
             #chat_field.send_keys(messages[msg_nr%len(messages)])
-            chat_field.send_keys(msg_nr)
+            chat_field.send_keys("slow message: " + str(msg_nr) + " ResidentSleeper")
             chat_field.send_keys(Keys.ENTER)
-            msg_nr += 1
             time.sleep(1)
+            msg_nr += 1
             slow_delta_time = time.time() - slow_start_time 
-            print(slow_delta_time)
+            print("slow posting time: ", slow_delta_time)
 
 
         fast_start_time = time.time()
@@ -86,18 +86,18 @@ def post_messages(chat_field, time_slow, time_fast):
         # Fast messages
         while time_fast >= fast_delta_time:
             #chat_field.send_keys(messages[msg_nr%len(messages)])
-            chat_field.send_keys(msg_nr)
+            chat_field.send_keys("fast message: " + str(msg_nr) + " PogChamp")
             chat_field.send_keys(Keys.ENTER)
-            msg_nr += 1
             time.sleep(0.2)
+            msg_nr += 1
             fast_delta_time = time.time() - fast_start_time
-            print(fast_delta_time)
+            print("fast posting time:", fast_delta_time)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Post chat messages in a twitch-channel')
-    parser.add_argument('channel', help='Twitch channel to take the clip from')
-    parser.add_argument('time_slow', help='Time chatbot will post messages slowly')
-    parser.add_argument('time_fast', help='Time chatbot will post messages quickly')
+    parser.add_argument('channel', help='Twitch channel to post messages in its chat')
+    parser.add_argument('time_slow', help='How many seconds chatbot will post messages slowly')
+    parser.add_argument('time_fast', help='How many seconds chatbot will post messages quickly')
     args = parser.parse_args()
     run_chat_bot(args.channel, int(args.time_slow), int(args.time_fast))
