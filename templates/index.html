@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <meta name="author" content=""
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+  .list {
+      list-style: none;
+  }
+  </style>
+</head>
+
+<body>
+    <div id="twitch-embed">
+        <ul class="list">
+        </ul>
+    </div>
+    
+
+    <script src="https://embed.twitch.tv/embed/v1.js"></script>
+    <script async src="https://cdn.embedly.com/widgets/platform.js" charset="UTF-8"></script>
+    <script>
+    (async function() {
+        let ul = document.getElementsByClassName('list')[0];
+    
+        const listItems = await fetch('https://adsai.dk/twitch-clipper/clips').then(data => data.json()).then(data => {
+        return data.map(data => {
+            return `<blockquote class="embedly-card"><h4><a href="${data}">HYPERDANSGAMEW WARNING | ROOM CLEANING STREAM</a></h4></blockquote>`
+                })
+            });
+        for(var i = 0; i < listItems.length; i++){
+    
+            let li = document.createElement('li');
+            li.innerHTML = listItems[i]
+            ul.appendChild(li);
+        }
+    
+    }())
+    </script>
+    
+</body>
+
+</html>
