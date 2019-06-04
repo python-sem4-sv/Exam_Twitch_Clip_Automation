@@ -6,6 +6,9 @@ import time
 import argparse
 from twitch_clipper import create_twitch_clip
 import settings
+from urllib import request
+import json
+
 
 ## Miscellaneous
 threshold = 10
@@ -21,7 +24,9 @@ emote_feelings = [
     ("racial", "Trihard"), ("racial", "KKona"),
     ("scary", "monkaS"), ("scary", "monkaW"),
     ("sexy", "gachi"), ("sexy", "kreyGASM")
-]   
+] 
+url = "https://adsai.dk/twitch-clipper/clips" 
+ 
 
 def main(channel_name):
     sock = init(channel_name)
@@ -34,7 +39,7 @@ def main(channel_name):
         print("Messages len: ", len(messages))
 
         if chat_activity_avg is not None:
-            clip_or_nah(messages, chat_activity_avg, channel_name)
+            clip_or_not(messages, chat_activity_avg, channel_name)
         
         print(" ")
 
@@ -98,7 +103,7 @@ def update_avg(messages):
         msg_count.append(len(messages))
         return sum(msg_count[:6]) / 6
     
-def clip_or_nah(messages, chat_activity_avg, channel_name):
+def clip_or_not(messages, chat_activity_avg, channel_name):
     global start_peak
     global start_chat_activity_avg
     global messages_full_period
@@ -122,7 +127,8 @@ def clip_or_nah(messages, chat_activity_avg, channel_name):
                 print("do selenium stuff")
                 try:
                     link_date, link = create_twitch_clip(settings.username, settings.password, (end_peak - start_peak), channel_name, title)
-                    # post link to server
+                    post_clip(link, link_date, settings.rest_password)
+                    
                 except:
                     print("clip failed")
                     pass
@@ -138,7 +144,7 @@ def clip_or_nah(messages, chat_activity_avg, channel_name):
             print("do selenium stuff LONG")
             try:
                 link_date, link = create_twitch_clip(settings.username, settings.password, 60, channel_name, title)
-                #post link to server
+                post_clip(link, link_date, settings.rest_password)
             except:
                 print("clip failed")
                 pass
@@ -177,7 +183,20 @@ def categorize_messages(message_list):
                     
     return emote_category_count, emote_count
 
+def post_clip(link, date, password):
+    jsonObject = {"link": link,
+                  "date": date,
+                  "password":password
+                  }
 
+    req = request.Request(url)
+    req.add_header('Content-Type', 'application/json; charset=utf-8')
+    jsondata = json.dumps(jsonObject)
+    jsondataasbytes = j sondata.encode('utf-8')   # needs to be bytes
+    req.add_header('Content-Length', len(jsondataasbytes))
+    print (jsondataasbytes)
+    response = request.urlopen(req, jsondataasbytes) 
+    print(response)
 
 
 if __name__ == "__main__":
