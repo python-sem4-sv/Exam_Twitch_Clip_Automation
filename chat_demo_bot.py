@@ -72,8 +72,7 @@ def post_messages(chat_field, time_slow, time_fast):
         msg_nr = 0
         while time_slow >= slow_delta_time:
             #chat_field.send_keys(messages[msg_nr%len(messages)])
-            chat_field.send_keys("slow message: " + str(msg_nr) + " ResidentSleeper")
-            chat_field.send_keys(Keys.ENTER)
+            chat_field.send_keys("slow message: " + str(msg_nr) + " ResidentSleeper", Keys.ENTER)
             time.sleep(1)
             msg_nr += 1
             slow_delta_time = time.time() - slow_start_time 
@@ -86,8 +85,7 @@ def post_messages(chat_field, time_slow, time_fast):
         # Fast messages
         while time_fast >= fast_delta_time:
             #chat_field.send_keys(messages[msg_nr%len(messages)])
-            chat_field.send_keys("fast message: " + str(msg_nr) + " PogChamp")
-            chat_field.send_keys(Keys.ENTER)
+            chat_field.send_keys("fast message: " + str(msg_nr) + " PogChamp", Keys.ENTER)
             time.sleep(0.2)
             msg_nr += 1
             fast_delta_time = time.time() - fast_start_time
