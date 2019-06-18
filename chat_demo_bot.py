@@ -8,17 +8,6 @@ from selenium.webdriver.common.action_chains import ActionChains
 from datetime import datetime
 import settings
 
-def save_cookie(driver, path):
-    with open(path, 'wb') as filehandler:
-        pickle.dump(driver.get_cookies(), filehandler)
-
-def load_cookie(driver, path):
-     with open(path, 'rb') as cookiesfile:
-         cookies = pickle.load(cookiesfile)
-         for cookie in cookies:
-             driver.add_cookie(cookie)
-
-
 def run_chat_bot(channel, time_slow, time_fast):
     message = "Hello my dude!"
     base_url = f'https://www.twitch.tv/{channel}/chat?popout='
@@ -55,12 +44,21 @@ def run_chat_bot(channel, time_slow, time_fast):
         save_cookie(browser, cookie_path)
         browser.refresh()        
     
-    browser.implicitly_wait(5)
     chat_field = browser.find_element_by_xpath("//textarea[@data-a-target='chat-input']")
 
     post_messages(chat_field, time_slow, time_fast)
     
     #actions = ActionChains(browser)
+
+def save_cookie(driver, path):
+    with open(path, 'wb') as filehandler:
+        pickle.dump(driver.get_cookies(), filehandler)
+
+def load_cookie(driver, path):
+    with open(path, 'rb') as cookiesfile:
+        cookies = pickle.load(cookiesfile)
+        for cookie in cookies:
+            driver.add_cookie(cookie)
 
 
 def post_messages(chat_field, time_slow, time_fast):
@@ -95,7 +93,7 @@ def post_messages(chat_field, time_slow, time_fast):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Post chat messages in a twitch-channel')
     parser.add_argument('channel', help='Twitch channel to post messages in its chat')
-    parser.add_argument('time_slow', help='How many seconds chatbot will post messages slowly')
-    parser.add_argument('time_fast', help='How many seconds chatbot will post messages quickly')
+    parser.add_argument('time_slow', type=int, help='How many seconds chatbot will post messages slowly')
+    parser.add_argument('time_fast', type=int, help='How many seconds chatbot will post messages quickly')
     args = parser.parse_args()
-    run_chat_bot(args.channel, int(args.time_slow), int(args.time_fast))
+    run_chat_bot(args.channel, args.time_slow, args.time_fast)
