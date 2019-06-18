@@ -10,44 +10,90 @@ from urllib import request
 import json
 
 
-## Miscellaneous
+## Miscellaneous variables
+#Length of interval in seconds to record a cycle of messages
 cycle_time = 10
-msg_count = []
+
+#List of the amount messages for each cycle
+msg_count_cycles = []
+
+#Time set when a chat peak happened
 start_peak = None
+
+#Chat activity avg. a few cycles before start_peak happens 
 start_chat_activity_avg = None
+
+#Threshold weights
 start_activity_threshold = 2.0
 continue_activity_threshold = 1.5
-messages_full_period = []
-emote_feelings = [
-    ("awesome", "Pog"), ("awesome", "PogU"), ("awesome", "POGGERS"), ("awesome", "PogChamp"),
-    ("funny", "LULW"), ("funny", "LUL"), ("funny", "OMEGALUL"), ("funny", "DuckerZ"),
-    ("sad", "PepeHands"), ("sad", "FeelsBadMan"),
-    ("cringe", "haHAA"),
-    ("racial", "Trihard"), ("racial", "KKona"),
-    ("scary", "monkaS"), ("scary", "monkaW"),
-    ("sexy", "gachi"), ("sexy", "kreyGASM")
-] 
+
+#All messages from the peak period. Used for creating a title
+messages_in_peak_period = []
+
+min_clip_length = 20
+max_clip_length = 60
+
+emotes = [
+    "Pog", 
+    "PogU", 
+    "POGGERS", 
+    "PogChamp", 
+    "LULW", 
+    "LUL", 
+    "OMEGALUL", 
+    "DuckerZ", 
+    "PepeHands", 
+    "FeelsBadMan", 
+    "haHAA", 
+    "Trihard", 
+    "KKona", 
+    "monkaS", 
+    "monkaW", 
+    "gachi", 
+    "kreyGASM"
+    ]
+
+feeling = {
+    "Pog":"awesome", 
+    "PogU":"awesome", 
+    "POGGERS":"awesome", 
+    "PogChamp": "awesome", 
+    "haHAA":"cringe", 
+    "LULW":"funny", 
+    "LUL":"funny", 
+    "OMEGALUL":"funny", 
+    "DuckerZ":"funny", 
+    "TriHard":"racial", 
+    "KKona":"racial", 
+    "PepeHands":"sad",
+    "FeelsBadMan":"sad", 
+    "monkaS":"scary",
+    "monkaW":"scary", 
+    "gachiGASM":"sexy", 
+    "gachiBASS":"sexy", 
+    "kreyGASM":"sexy"
+    }
+
 url = "https://adsai.dk/twitch-clipper/clips" 
  
 
 def main(channel_name):
-    sock = init(channel_name)
+    sock = init_IRC(channel_name)
 
     while True:      
-        messages = get_messages(cycle_time, sock)
+        cur_cycle_messages = get_messages(cycle_time, sock)
 
-        chat_activity_avg = update_avg(messages)
-        print("Chat avg: ", chat_activity_avg)
-        print("Messages len: ", len(messages))
+        chat_activity_avg = update_avg(cur_cycle_messages)
+        print("Chat avg.: ", chat_activity_avg)
+        print("Amount of messages of current cycle: ", len(cur_cycle_messages))
 
         if chat_activity_avg is not None:
-            clip_or_not(messages, chat_activity_avg, channel_name)
+            clip_or_not(cur_cycle_messages, chat_activity_avg, channel_name)
         
         print(" ")
-   
-            
-            
-def init(channel_name):
+
+              
+def init_IRC(channel_name):
     server = 'irc.chat.twitch.tv'
     port = 6667
     channel = '#' + channel_name
@@ -59,7 +105,6 @@ def init(channel_name):
     sock.send(f"JOIN {channel}\n".encode('utf-8'))
     return sock
 
-# 
 def get_messages(cycle_time, sock):
     curr_time = time.time()
     start_time = time.time()
@@ -69,60 +114,68 @@ def get_messages(cycle_time, sock):
             curr_time = time.time()
 
             chat_msg = scan_chat(sock)
-            if chat_msg is not 0:
-                messages.append(chat_msg)
+            messages.append(chat_msg)
                 
-    start_time = time.time()
     return messages
 
 def scan_chat(sock):    
     resp = sock.recv(2048).decode('utf-8')
+
+    #Server checks if socket is active. If PONG is not returned, you will be removed from the relay
     if resp.startswith('PING'):
         sock.send("PONG\n".encode('utf-8'))
     
     elif len(resp) > 0:
+        #Group 1 is username, group 2 is msg
         rgx = re.compile(r':([\S ]+)![^:]*:([\S ]*)')
-        r1 = rgx.search(demojize(resp));
+        r1 = rgx.search(demojize(resp))
         return (r1.group(1), r1.group(2), time.time())
     
     return 0
 
 def update_avg(messages):
-    global msg_count
-    msg_count_len = len(msg_count)
-    print("msg_count_len: ", msg_count_len)
+    global msg_count_cycles
     
-    if msg_count_len < 12:
-        msg_count.append(len(messages))
+    cycle_amount = len(msg_count_cycles)
+    print("Number of cycles: ", cycle_amount)
+    
+    #6 cycles is used for avg. msg. count + 2 additional cycles to avoid chat peaks to be incorporated in our avg. msg. count
+    if cycle_amount < 8:
+        msg_count_cycles.append(len(messages))
         return None
     
-    elif msg_count_len == 12:
-        msg_count.pop(0)
-        msg_count.append(len(messages))
-        return sum(msg_count[:6]) / 6
+    elif cycle_amount == 8:
+        msg_count_cycles.pop(0)
+        msg_count_cycles.append(len(messages))
+        selected_cycles = msg_count_cycles[:-2]
+        return sum(selected_cycles) / len(selected_cycles)
     
-def clip_or_not(messages, chat_activity_avg, channel_name):
+def clip_or_not(cur_cycle_messages, chat_activity_avg, channel_name):
     global start_peak
     global start_chat_activity_avg
-    global messages_full_period
-#     Get in here if there is a peak
-    if(len(messages) > chat_activity_avg * start_activity_threshold and start_peak is None): 
-#       Set start peak
-        timestamp = messages[-1][2]
-        print("set start_peak")       
-        start_peak = timestamp
+    global messages_in_peak_period
+    global min_clip_length
+    
+    #Get in here if there is a peak
+    if(len(cur_cycle_messages) > chat_activity_avg * start_activity_threshold and start_peak is None): 
+        
+        #Set start peak. [-1][2] is timestamp of the last message in the current cycle of messages 
+        start_peak = cur_cycle_messages[-1][2]
         start_chat_activity_avg = chat_activity_avg
-        messages_full_period += messages
+        messages_in_peak_period += cur_cycle_messages
+        print("Set start peak")       
         
     elif start_peak is not None:
         end_peak = time.time()
-        print("End - start peak: ", end_peak - start_peak)
-        messages_full_period += messages
+        print("Current length of clip: ", end_peak - start_peak)
+        messages_in_peak_period += cur_cycle_messages
         
-        if len(messages) < start_chat_activity_avg * continue_activity_threshold:
-            if end_peak - start_peak >= 20:
-                title = create_title(messages_full_period, channel_name)
-                print("do selenium stuff")
+        #If peak ends
+        if len(cur_cycle_messages) < start_chat_activity_avg * continue_activity_threshold:
+        
+            if end_peak - start_peak >= min_clip_length:
+                title = create_title(messages_in_peak_period, channel_name)
+                
                 try:
                     link_date, link = create_twitch_clip(settings.username, settings.password, (end_peak - start_peak), channel_name, title)
                     post_clip(link, link_date, settings.rest_password)
@@ -130,15 +183,16 @@ def clip_or_not(messages, chat_activity_avg, channel_name):
                 except:
                     print("clip failed")
                     pass
+
+            #Reset peaks to avoid getting into the if statement when not having peaks
             start_peak = None
             start_chat_activity_avg = None
-            messages_full_period = []
+            messages_in_peak_period = []
             
                 
-#           Clip if peak is longer than 55 seconds  
-#           Reset peaks to avoid getting into the if statement when not having peaks
-        elif end_peak - start_peak >= 55:
-            title = create_title(messages_full_period, channel_name)
+        #Clip if peak is longer than 55 seconds  
+        elif end_peak - start_peak >= max_clip_length:
+            title = create_title(messages_in_peak_period, channel_name)
             print("do selenium stuff LONG")
             try:
                 link_date, link = create_twitch_clip(settings.username, settings.password, 60, channel_name, title)
@@ -148,60 +202,65 @@ def clip_or_not(messages, chat_activity_avg, channel_name):
                 pass
             start_peak = None
             start_chat_activity_avg = None
-            messages_full_period = []
-
+            messages_in_peak_period = []
 
 def create_title(messages_list, channel_name):
-    category_count, emote_count = categorize_messages(messages_full_period)
+    feelings_count, emote_count = categorize_messages(messages_list)
     title = channel_name 
-    title += " " + sorted(category_count.items(), key=lambda x: x[1], reverse=True)[1][0]
-    title += " " + str(sorted(emote_count.items(), key=lambda x: x[1], reverse=True)[0][0])
+    title += " " + sorted(feelings_count.items(), key=lambda x: x[1], reverse=True)[0][0]
+    title += " " + sorted(emote_count.items(), key=lambda x: x[1], reverse=True)[0][0]
 
     return title
 
 def categorize_messages(message_list):
-    emote_category_count = {}
+    feeling_count = {}
     emote_count = {}
+    
     for msg in message_list:
         split_msg = msg[1].split(' ')
+
         for word in split_msg:
             word = word.strip()
-            for index, emote in enumerate(emote_feelings):
-                if emote[1] == word:
-                    current_emote = emote_count.get(emote[1], 0)
-                    emote_count[emote[1]] = current_emote + 1
-                    category = emote_category_count.get(emote[0], 0)
-                    emote_category_count[emote[0]] =  category + 1
+
+            for emote in emotes:
+                if emote == word:
+                    current_emote_count = emote_count.get(emote, 0)
+                    emote_count[emote] = current_emote_count + 1
                     break
-                elif index == len(emote_feelings) - 1:
-                    category = emote_category_count.get("Other", 0)
-                    emote_category_count["Other"] = category + 1
-                    current_word = emote_count.get(word, 0)
-                    emote_count[word] = current_word + 1
-                    
-    return emote_category_count, emote_count
+
+    #Sum count of feelings for each emote
+    for emote in emote_count.items():
+        feeling = feeling[emote[0]]
+        feeling_cur_count = feeling_count.get(feeling, 0)  
+        feeling_count[feeling] = feeling_cur_count + emote[1]      
+
+    return feeling_count, emote_count
 
 def post_clip(link, date, password):
-    jsonObject = {"url": link,
-                  "date": date,
-                  "password":password
-                  }
+    jsonObject = {
+        "url": link,
+        "date": date,
+        "password":password
+        }
 
     req = request.Request(url)
+    json_data = json.dumps(jsonObject)
+    json_data_as_bytes = json_data.encode('utf-8')
+
     req.add_header('Content-Type', 'application/json; charset=utf-8')
-    jsondata = json.dumps(jsonObject)
-    jsondataasbytes = jsondata.encode('utf-8')   # needs to be bytes
-    req.add_header('Content-Length', len(jsondataasbytes))
-    print (jsondataasbytes)
-    response = request.urlopen(req, jsondataasbytes) 
+    req.add_header('Content-Length', len(json_data_as_bytes))
+    
+    response = request.urlopen(req, json_data_as_bytes) 
     print(response)
 
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="This program scans a channel on twitch, and creates clips if anything is clipworthy, based on twitch chat activity")
-    
-    # parser.add_argument("url", help="Add the url to be downloaded")
-    parser.add_argument("streamer", help="Give a online streamers name to look at", default="sodapoppin")
+    parser = argparse.ArgumentParser(description="This program scans a channel on twitch and creates clips if anything is clipworthy based on twitch chat activity")
+    parser.add_argument("streamer", help="Give an online streamer's name to look at", default="esl_csgo")
+    parser.add_argument("-min", "--minimum_clip_length", type=int, help="Set minimum clip length", default=20)
+    parser.add_argument("-max", "--max_clip_length", type=int, help="Set maximum clip length", default=60)
     args = parser.parse_args()
-    print("Hi, stats will be printed every ~10 seconds!")
+
+    min_clip_length = args.minimum_clip_length
+    max_clip_length = args.maximum_clip_length
+    print("Hi. stats will be printed every ~10 seconds!")
     main(args.streamer.lower())
