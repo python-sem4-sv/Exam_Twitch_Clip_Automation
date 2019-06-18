@@ -25,17 +25,16 @@ def post_method():
     body = request.json
     if body.get('password') != None and body['password'] == rest_password:
         #mongodb expects a dictionary
-        mongo.db.links.insert_one({'link': body['link'], 'date': body['date']})
+        mongo.db.clips.insert_one({'url': body['url'], 'date': body['date']})
         return "Inserted :)"
     else:
         return jsonify({'msg': 'Error!'})
 
 def get_method():
-    links = mongo.db.links.find({})
-    response_links = []
-    for link in links:
-        response_links.append(link['link'])
-    return jsonify(response_links)
+    clips = mongo.db.clips.find({})
+    response = [ {'url':clip['url'], 'date':clip['date']} for clip in clips ]
+    
+    return jsonify(response)
 
 if __name__ == '__main__':
     app.run()

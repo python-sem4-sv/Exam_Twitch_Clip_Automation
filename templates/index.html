@@ -29,7 +29,7 @@
     
         const listItems = await fetch('https://adsai.dk/twitch-clipper/clips').then(data => data.json()).then(data => {
         return data.map(data => {
-            return `<blockquote class="embedly-card"><h4><a href="${data}">HYPERDANSGAMEW WARNING | ROOM CLEANING STREAM</a></h4></blockquote>`
+            return `<blockquote class="embedly-card"><h4><a href="${data.url}">HYPERDANSGAMEW WARNING | ROOM CLEANING STREAM</a></h4></blockquote>`
                 })
             });
         for(var i = 0; i < listItems.length; i++){
