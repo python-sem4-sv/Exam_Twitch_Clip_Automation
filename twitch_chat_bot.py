@@ -11,10 +11,12 @@ import json
 
 
 ## Miscellaneous
-threshold = 10
+cycle_time = 10
 msg_count = []
 start_peak = None
 start_chat_activity_avg = None
+start_activity_threshold = 2.0
+continue_activity_threshold = 1.5
 messages_full_period = []
 emote_feelings = [
     ("awesome", "Pog"), ("awesome", "PogU"), ("awesome", "POGGERS"), ("awesome", "PogChamp"),
@@ -32,7 +34,7 @@ def main(channel_name):
     sock = init(channel_name)
 
     while True:      
-        messages = get_messages(threshold, sock)
+        messages = get_messages(cycle_time, sock)
 
         chat_activity_avg = update_avg(messages)
         print("Chat avg: ", chat_activity_avg)
@@ -42,10 +44,7 @@ def main(channel_name):
             clip_or_not(messages, chat_activity_avg, channel_name)
         
         print(" ")
-
-            
-            
-            
+   
             
             
 def init(channel_name):
@@ -61,12 +60,12 @@ def init(channel_name):
     return sock
 
 # 
-def get_messages(threshold, sock):
+def get_messages(cycle_time, sock):
     curr_time = time.time()
     start_time = time.time()
     messages = []
     
-    while curr_time - start_time < threshold:
+    while curr_time - start_time < cycle_time:
             curr_time = time.time()
 
             chat_msg = scan_chat(sock)
@@ -84,7 +83,6 @@ def scan_chat(sock):
     elif len(resp) > 0:
         rgx = re.compile(r':([\S ]+)![^:]*:([\S ]*)')
         r1 = rgx.search(demojize(resp));
-        #print("group1: ", r1.group(1), " group2: ", r1.group(2), " time: ", time.time())
         return (r1.group(1), r1.group(2), time.time())
     
     return 0
@@ -108,7 +106,7 @@ def clip_or_not(messages, chat_activity_avg, channel_name):
     global start_chat_activity_avg
     global messages_full_period
 #     Get in here if there is a peak
-    if(len(messages) > chat_activity_avg * 1.0 and start_peak is None): 
+    if(len(messages) > chat_activity_avg * start_activity_threshold and start_peak is None): 
 #       Set start peak
         timestamp = messages[-1][2]
         print("set start_peak")       
@@ -121,7 +119,7 @@ def clip_or_not(messages, chat_activity_avg, channel_name):
         print("End - start peak: ", end_peak - start_peak)
         messages_full_period += messages
         
-        if len(messages) < start_chat_activity_avg * 1.0:
+        if len(messages) < start_chat_activity_avg * continue_activity_threshold:
             if end_peak - start_peak >= 20:
                 title = create_title(messages_full_period, channel_name)
                 print("do selenium stuff")
@@ -192,7 +190,7 @@ def post_clip(link, date, password):
     req = request.Request(url)
     req.add_header('Content-Type', 'application/json; charset=utf-8')
     jsondata = json.dumps(jsonObject)
-    jsondataasbytes = j sondata.encode('utf-8')   # needs to be bytes
+    jsondataasbytes = jsondata.encode('utf-8')   # needs to be bytes
     req.add_header('Content-Length', len(jsondataasbytes))
     print (jsondataasbytes)
     response = request.urlopen(req, jsondataasbytes) 
