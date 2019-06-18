@@ -182,7 +182,7 @@ def categorize_messages(message_list):
     return emote_category_count, emote_count
 
 def post_clip(link, date, password):
-    jsonObject = {"link": link,
+    jsonObject = {"url": link,
                   "date": date,
                   "password":password
                   }
