@@ -53,7 +53,7 @@ emotes = [
     "kreyGASM"
     ]
 
-feeling = {
+feelings = {
     "Pog":"awesome", 
     "PogU":"awesome", 
     "POGGERS":"awesome", 
@@ -85,7 +85,7 @@ def main(channel_name):
 
         chat_activity_avg = update_avg(cur_cycle_messages)
         print("Chat avg.: ", chat_activity_avg)
-        print("Amount of messages of current cycle: ", len(cur_cycle_messages))
+        print("Amount of messages in current cycle: ", len(cur_cycle_messages))
 
         if chat_activity_avg is not None:
             clip_or_not(cur_cycle_messages, chat_activity_avg, channel_name)
@@ -114,7 +114,8 @@ def get_messages(cycle_time, sock):
             curr_time = time.time()
 
             chat_msg = scan_chat(sock)
-            messages.append(chat_msg)
+            if chat_msg is not 0:
+                messages.append(chat_msg)
                 
     return messages
 
@@ -155,6 +156,7 @@ def clip_or_not(cur_cycle_messages, chat_activity_avg, channel_name):
     global start_chat_activity_avg
     global messages_in_peak_period
     global min_clip_length
+    global max_clip_length
     
     #Get in here if there is a peak
     if(len(cur_cycle_messages) > chat_activity_avg * start_activity_threshold and start_peak is None): 
@@ -230,7 +232,7 @@ def categorize_messages(message_list):
 
     #Sum count of feelings for each emote
     for emote in emote_count.items():
-        feeling = feeling[emote[0]]
+        feeling = feelings[emote[0]]
         feeling_cur_count = feeling_count.get(feeling, 0)  
         feeling_count[feeling] = feeling_cur_count + emote[1]      
 
@@ -257,7 +259,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="This program scans a channel on twitch and creates clips if anything is clipworthy based on twitch chat activity")
     parser.add_argument("streamer", help="Give an online streamer's name to look at", default="esl_csgo")
     parser.add_argument("-min", "--minimum_clip_length", type=int, help="Set minimum clip length", default=20)
-    parser.add_argument("-max", "--max_clip_length", type=int, help="Set maximum clip length", default=60)
+    parser.add_argument("-max", "--maximum_clip_length", type=int, help="Set maximum clip length", default=60)
     args = parser.parse_args()
 
     min_clip_length = args.minimum_clip_length
