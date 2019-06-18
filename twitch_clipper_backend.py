@@ -3,9 +3,12 @@ import pymongo
 from flask_pymongo import PyMongo
 from settings import (rest_password, connection_string)
 from flask import render_template
+from flask_cors import CORS
+
 
 app = Flask(__name__)
 app.config["MONGO_URI"] = connection_string
+CORS(app)
 mongo = PyMongo(app)
 @app.route('/')
 def index():
