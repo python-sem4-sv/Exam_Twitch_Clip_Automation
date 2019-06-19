@@ -45,11 +45,12 @@ emotes = [
     "PepeHands", 
     "FeelsBadMan", 
     "haHAA", 
-    "Trihard", 
+    "TriHard", 
     "KKona", 
     "monkaS", 
     "monkaW", 
-    "gachi", 
+    "gachiGASM",
+    "gacchiBASS", 
     "kreyGASM"
     ]
 
@@ -122,16 +123,17 @@ def get_messages(cycle_time, sock):
 def scan_chat(sock):    
     resp = sock.recv(2048).decode('utf-8')
 
-    #Server checks if socket is active. If PONG is not returned, you will be removed from the relay
-    if resp.startswith('PING'):
-        sock.send("PONG\n".encode('utf-8'))
-    
-    elif len(resp) > 0:
-        #Group 1 is username, group 2 is msg
-        rgx = re.compile(r':([\S ]+)![^:]*:([\S ]*)')
-        r1 = rgx.search(demojize(resp))
-        return (r1.group(1), r1.group(2), time.time())
-    
+    if resp is not None:
+        #Server checks if socket is active. If PONG is not returned, you will be removed from the relay
+        if resp.startswith('PING'):
+            sock.send("PONG\n".encode('utf-8'))
+        
+        elif len(resp) > 0:
+            #Group 1 is username, group 2 is msg
+            rgx = re.compile(r':([\S ]+)![^:]*:([\S ]*)')
+            r1 = rgx.search(demojize(resp))
+            return (r1.group(1), r1.group(2), time.time())
+        
     return 0
 
 def update_avg(messages):
@@ -145,7 +147,7 @@ def update_avg(messages):
         msg_count_cycles.append(len(messages))
         return None
     
-    elif cycle_amount == 8:
+    else:
         msg_count_cycles.pop(0)
         msg_count_cycles.append(len(messages))
         selected_cycles = msg_count_cycles[:-2]
@@ -161,8 +163,8 @@ def clip_or_not(cur_cycle_messages, chat_activity_avg, channel_name):
     #Get in here if there is a peak
     if(len(cur_cycle_messages) > chat_activity_avg * start_activity_threshold and start_peak is None): 
         
-        #Set start peak. [-1][2] is timestamp of the last message in the current cycle of messages 
-        start_peak = cur_cycle_messages[-1][2]
+        #Set start peak. [0][2] is timestamp of the first message in the current cycle of messages 
+        start_peak = cur_cycle_messages[0][2]
         start_chat_activity_avg = chat_activity_avg
         messages_in_peak_period += cur_cycle_messages
         print("Set start peak")       
@@ -192,7 +194,7 @@ def clip_or_not(cur_cycle_messages, chat_activity_avg, channel_name):
             messages_in_peak_period = []
             
                 
-        #Clip if peak is longer than 55 seconds  
+        #Clip if peak is longer than 60 seconds  
         elif end_peak - start_peak >= max_clip_length:
             title = create_title(messages_in_peak_period, channel_name)
             print("do selenium stuff LONG")
@@ -215,8 +217,8 @@ def create_title(messages_list, channel_name):
     return title
 
 def categorize_messages(message_list):
-    feeling_count = {}
     emote_count = {}
+    feeling_count = {}
     
     for msg in message_list:
         split_msg = msg[1].split(' ')

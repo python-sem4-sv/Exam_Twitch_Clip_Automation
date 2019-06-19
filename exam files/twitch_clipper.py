@@ -17,6 +17,7 @@ def create_twitch_clip(username, password, clip_length_in_seconds, channel = 'gr
     handle_login(browser, username, password, cookie_path)
 
     #Implicitly wait for potential ads
+    browser.implicitly_wait(35)
     make_clip(browser, clip_title, start_time, clip_length_in_seconds)
     clip_link = submit_clip(browser, clip_title, clip_link_path)
     clipped_time = datetime.now().strftime("%H:%M:%S")
@@ -47,7 +48,7 @@ def handle_login(browser, username, password, cookie_path):
 
         login_submit = browser.find_element_by_xpath("/html/body/div[2]/div/div/div/div/div/div[1]/div/div/form/div/div[3]")
         login_submit.click()
-        #Sleep to sure that all of the cookies are saved
+        #Sleep to make sure that all of the cookies are saved
         time.sleep(2)
         save_cookie(browser, cookie_path)
 
@@ -70,12 +71,9 @@ def check_for_mature_filter(browser, cookie_path):
         pass        
 
 def make_clip(browser, clip_title, start_time, clip_length_in_seconds):
-    browser.implicitly_wait(35)
     #Click the clip button
     clip_button = browser.find_element_by_class_name('pl-clips-button')
     clip_button.send_keys(Keys.ENTER)
-
-    #end time to compensate for time difference between the method is called and the clip is saved
 
     #Switch the active tab to the new tab which the button opened
     browser.switch_to.window(browser.window_handles[1])
@@ -101,8 +99,8 @@ def make_clip(browser, clip_title, start_time, clip_length_in_seconds):
 
     #drag entire blue clip bar, corresponding to length of ad
     clip_bar = browser.find_element_by_xpath('//*[@id="root"]/div/div/div/div[3]/div/div/main/div/div/div[3]/div/div[2]/div[1]/div/div/div/div[2]/div[2]')
-
-    #take ad time into consideration 
+ 
+    #end time to compensate for time difference between the method is called and the clip is saved
     end_time = time.time()
     actions.click_and_hold(clip_bar).move_by_offset(-drag_bar_width_per_second * (end_time - start_time), 0).release()
     actions.perform()
