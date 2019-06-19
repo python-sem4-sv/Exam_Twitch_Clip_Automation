@@ -1,29 +1,7 @@
-from urllib import request
-import json
+test = {"one": "1", "two": "2", "three": "3"}
+c = iter([1, 2, 3, 4])
 
-url = 'https://adsai.dk/twitch-clipper/clips' 
-
-
-# def post_clip(link, date, password):
-#     jsonObject = {"link": link,
-#                   "date": date,
-#                   "password":password
-#                   }
-
-#     req = request.Request(url)
-#     req.add_header('Content-Type', 'application/json; charset=utf-8')
-#     jsondata = json.dumps(jsonObject)
-#     jsondataasbytes = jsondata.encode('utf-8')   # needs to be bytes
-#     req.add_header('Content-Length', len(jsondataasbytes))
-#     print (jsondataasbytes)
-#     response = request.urlopen(req, jsondataasbytes) 
-#     print(response)
-
-# post_clip('https://clips.twitch.tv/DignifiedYawningChipmunkFreakinStinkin','01-01-01 00:00','datbois')
-
-
-test = [1,2,3,4,5,6,7,8,9,10]
-
-test1 = test[:-2]
-
-print(test1)
+t = next(c)
+print(t)
+t = next(c)
+print(t)
