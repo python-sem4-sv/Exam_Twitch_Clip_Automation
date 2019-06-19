@@ -226,15 +226,13 @@ def categorize_messages(message_list):
 
             for emote in emotes:
                 if emote == word:
-                    current_emote_count = emote_count.get(emote, 0)
-                    emote_count[emote] = current_emote_count + 1
+                    emote_count[emote] = emote_count.get(emote, 0) + 1
                     break
 
     #Sum count of feelings for each emote
     for emote in emote_count.items():
         feeling = feelings[emote[0]]
-        feeling_cur_count = feeling_count.get(feeling, 0)  
-        feeling_count[feeling] = feeling_cur_count + emote[1]      
+        feeling_count[feeling] = feeling_count.get(feeling, 0) + emote[1]      
 
     return feeling_count, emote_count
 
