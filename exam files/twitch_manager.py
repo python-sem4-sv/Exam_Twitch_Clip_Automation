@@ -184,8 +184,9 @@ def clip_or_not(cur_cycle_messages, chat_activity_avg, channel_name):
                     link_date, link = create_twitch_clip(settings.username, settings.password, (end_peak - start_peak), channel_name, title)
                     post_clip(link, link_date, settings.rest_password)
                     
-                except:
+                except Exception as ex:
                     print("clip failed")
+                    print(ex)
                     pass
 
             #Reset peaks to avoid getting into the if statement when not having peaks
@@ -201,9 +202,10 @@ def clip_or_not(cur_cycle_messages, chat_activity_avg, channel_name):
             try:
                 link_date, link = create_twitch_clip(settings.username, settings.password, 60, channel_name, title)
                 post_clip(link, link_date, settings.rest_password)
-            except:
-                print("clip failed")
-                pass
+            except Exception as ex:
+                    print("clip failed")
+                    print(ex)
+                    pass
             start_peak = None
             start_chat_activity_avg = None
             messages_in_peak_period = []
